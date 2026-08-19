@@ -1,3 +1,9 @@
+import AppBar from '@mui/material/AppBar';
+import Box from '@mui/material/Box';
+import Container from '@mui/material/Container';
+import Grid from '@mui/material/Grid';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
 import { CartTrigger } from '@/cart';
 import { CartMount } from '@/demo/CartMount';
 import { ProductCard } from '@/demo/ProductCard';
@@ -16,43 +22,70 @@ import { catalogue } from '@/demo/catalogue';
 export default function HomePage() {
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-2.5">
-            <div className="grid h-9 w-9 place-items-center rounded-control bg-brand text-sm font-bold text-white">
+      <AppBar
+        position="sticky"
+        color="transparent"
+        elevation={0}
+        sx={{ borderBottom: 1, borderColor: 'divider', backdropFilter: 'blur(8px)', bgcolor: 'rgba(255,255,255,0.8)' }}
+      >
+        <Toolbar sx={{ maxWidth: 1152, width: '100%', mx: 'auto', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flex: 1 }}>
+            <Box
+              sx={{
+                display: 'grid',
+                placeItems: 'center',
+                height: 36,
+                width: 36,
+                borderRadius: 'var(--radius-control)',
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
+                fontSize: 14,
+                fontWeight: 700,
+              }}
+            >
               BW
-            </div>
-            <div className="leading-tight">
-              <p className="text-sm font-semibold">Brewhouse</p>
-              <p className="text-xs text-slate-500">Coffee equipment</p>
-            </div>
-          </div>
+            </Box>
+            <Box sx={{ lineHeight: 1.2 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                Brewhouse
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Coffee equipment
+              </Typography>
+            </Box>
+          </Box>
           <CartTrigger />
-        </div>
-      </header>
+        </Toolbar>
+      </AppBar>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <div className="mb-8 max-w-2xl">
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Shop all</h1>
-          <p className="mt-2 text-sm text-slate-600">
+      <Container component="main" maxWidth="lg" sx={{ flex: 1, py: { xs: 4, sm: 6 } }}>
+        <Box sx={{ mb: 4, maxWidth: 640 }}>
+          <Typography variant="h4" sx={{ fontWeight: 700 }}>
+            Shop all
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             This storefront is a stand-in host application. Everything cart-related — the button in
             the header, the slide-over and the live subtotal — is the self-contained cart
             micro-frontend.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          </Typography>
+        </Box>
+        <Grid container spacing={2.5}>
           {catalogue.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <Grid key={product.id} size={{ xs: 12, sm: 6, lg: 3 }}>
+              <ProductCard product={product} />
+            </Grid>
           ))}
-        </div>
-      </main>
+        </Grid>
+      </Container>
 
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-6 text-xs text-slate-500 sm:px-6">
-          Cart state is persisted to localStorage and synced across tabs. Try adding items, then
-          open this page in a second tab.
-        </div>
-      </footer>
+      <Box component="footer" sx={{ borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+        <Container maxWidth="lg" sx={{ py: 3 }}>
+          <Typography variant="caption" color="text.secondary">
+            Cart state is persisted to localStorage and synced across tabs. Try adding items, then
+            open this page in a second tab.
+          </Typography>
+        </Container>
+      </Box>
 
       {/* The micro-frontend's single mount point. */}
       <CartMount />

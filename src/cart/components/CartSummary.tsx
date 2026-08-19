@@ -1,5 +1,9 @@
 'use client';
 
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import { visuallyHidden } from '@mui/utils';
 import { formatMoney } from '../lib/money';
 import { useCartActions, useCartTotals } from '../store';
 import { Button } from './Button';
@@ -15,52 +19,63 @@ export function CartSummary({ onCheckout }: CartSummaryProps) {
   const formatted = formatMoney(subtotalCents, currency);
 
   return (
-    <div className="border-t border-slate-200 bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] dark:border-slate-700 dark:bg-slate-800">
-      <div className="flex items-baseline justify-between gap-4">
-        <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+    <Box
+      sx={{
+        borderTop: 1,
+        borderColor: 'divider',
+        bgcolor: 'background.paper',
+        p: 2.5,
+        pb: 'max(1.25rem, env(safe-area-inset-bottom))',
+      }}
+    >
+      <Stack direction="row" spacing={2} sx={{ alignItems: 'baseline', justifyContent: 'space-between' }}>
+        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
           Subtotal
-          <span className="ml-1 text-slate-400 dark:text-slate-500">
+          <Box component="span" sx={{ ml: 0.5, color: 'text.disabled' }}>
             ({itemCount} {itemCount === 1 ? 'item' : 'items'})
-          </span>
-        </span>
+          </Box>
+        </Typography>
         {/*
           Re-keyed on the value so a changed subtotal briefly flashes green:
           confirmation that the number the customer is looking at just
-          recalculated. Purely CSS, and skipped under prefers-reduced-motion.
+          recalculated.
         */}
-        <span
+        <Typography
           key={subtotalCents}
           data-testid="cart-subtotal"
-          className="text-xl font-semibold text-slate-900 tabular-nums motion-safe:animate-[cart-flash_600ms_ease-out] dark:text-white"
+          variant="h6"
+          sx={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}
         >
           {formatted}
-        </span>
-      </div>
+        </Typography>
+      </Stack>
 
       {/*
         Always the same sentence shape so the announcement is predictable, and
         deliberately *not* duplicating the visible "Your cart is empty" copy —
         otherwise the empty state gets read out twice.
       */}
-      <p aria-live="polite" aria-atomic="true" className="sr-only">
+      <Box aria-live="polite" aria-atomic="true" sx={visuallyHidden}>
         {`Cart subtotal ${formatted} for ${itemCount} ${itemCount === 1 ? 'item' : 'items'}.`}
-      </p>
+      </Box>
 
-      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+      <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: 0.5 }}>
         Shipping &amp; taxes calculated at checkout.
-      </p>
+      </Typography>
 
       <Button
         variant="primary"
         disabled={isEmpty}
         onClick={() => onCheckout?.(subtotalCents)}
-        className="mt-4 w-full px-4 py-3 font-semibold active:scale-[0.99] disabled:active:scale-100"
+        fullWidth
+        size="large"
+        sx={{ mt: 2 }}
       >
         Checkout · {formatted}
       </Button>
-      <Button variant="ghost" onClick={closeCart} className="mt-2 w-full px-4 py-2">
+      <Button variant="ghost" onClick={closeCart} fullWidth sx={{ mt: 1 }}>
         Continue shopping
       </Button>
-    </div>
+    </Box>
   );
 }

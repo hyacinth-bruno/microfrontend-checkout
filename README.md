@@ -7,7 +7,9 @@ A self-contained shopping cart you can drop into any storefront.
 - **Remove items** — explicit Remove, `−` at qty 1, or typing `0`; with Undo
 - **Live subtotal** — derived from the lines on every change, never stored
 
-Stack: **Next.js 16 (App Router) · React 19 · Tailwind CSS v4 · Zustand · Vitest + Testing Library**
+Stack: **Next.js 16 (App Router) · React 19 · Tailwind CSS v4 · Redux Toolkit · Vitest + Testing Library**
+
+> This branch swaps the state layer from Zustand to Redux Toolkit for a demo/comparison. The public API (`useCartStore`, `cartApi`, hooks) is unchanged — see `src/cart/store.ts`.
 
 ```
 npm install
@@ -46,7 +48,7 @@ The decisive argument for a *micro*-frontend is the **no-provider** property: th
 src/cart/                  ← the micro-frontend (the only thing you'd publish)
 ├── index.ts                ← public API; import from here and nowhere else
 ├── types.ts                 ← Product, CartLine, CartTotals
-├── store.ts                  ← Zustand store, selectors, host API, side effects
+├── store.ts                  ← Redux store, selectors, host API, side effects
 ├── mount.tsx                  ← mountCart() for non-Next / non-React hosts
 ├── lib/
 │   ├── cart-logic.ts           ← pure add / set / increment / remove / totals

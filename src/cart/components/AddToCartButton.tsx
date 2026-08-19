@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import CheckIcon from '@mui/icons-material/Check';
 import { DEFAULT_MAX_QUANTITY } from '../lib/cart-logic';
 import { useCartActions, useLineQuantity } from '../store';
 import type { Product } from '../types';
@@ -54,13 +55,10 @@ export function AddToCartButton({
       disabled={soldOut || atMax}
       aria-label={`Add ${product.name} to cart`}
       data-state={justAdded ? 'added' : 'idle'}
-      className={`w-full px-4 py-2.5 font-semibold active:scale-[0.98] disabled:active:scale-100 ${className}`}
+      fullWidth
+      startIcon={justAdded ? <CheckIcon fontSize="small" /> : undefined}
+      className={className}
     >
-      {justAdded && (
-        <svg viewBox="0 0 16 16" aria-hidden="true" className="h-4 w-4" fill="currentColor">
-          <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-6.5 6.5a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 1 1 1.06-1.06L6.75 10.19l5.97-5.97a.75.75 0 0 1 1.06 0" />
-        </svg>
-      )}
       {label}
     </Button>
   );

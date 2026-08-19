@@ -1,5 +1,11 @@
 'use client';
 
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import CardMedia from '@mui/material/CardMedia';
+import Chip from '@mui/material/Chip';
+import Typography from '@mui/material/Typography';
 import { AddToCartButton, formatMoney, useLineQuantity, type Product } from '@/cart';
 
 export function ProductCard({ product }: { product: Product }) {
@@ -7,39 +13,60 @@ export function ProductCard({ product }: { product: Product }) {
   const soldOut = (product.maxQuantity ?? Infinity) < 1;
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-panel border border-slate-200 bg-white shadow-resting transition hover:shadow-raised">
-      <div className="relative aspect-square overflow-hidden bg-slate-100">
-        {/* eslint-disable-next-line @next/next/no-img-element -- demo uses inline data-URLs */}
-        <img
-          src={product.imageUrl}
+    <Card variant="outlined" sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <Box sx={{ position: 'relative', aspectRatio: '1 / 1', overflow: 'hidden', bgcolor: 'action.hover' }}>
+        <CardMedia
+          component="img"
+          image={product.imageUrl}
           alt={product.name}
           loading="lazy"
-          decoding="async"
-          className={`h-full w-full object-cover transition duration-300 motion-safe:group-hover:scale-[1.03] ${
-            soldOut ? 'opacity-50 grayscale' : ''
-          }`}
+          sx={{
+            height: '100%',
+            width: '100%',
+            objectFit: 'cover',
+            filter: soldOut ? 'grayscale(1)' : 'none',
+            opacity: soldOut ? 0.5 : 1,
+          }}
         />
         {inCart > 0 && (
-          <span className="absolute left-3 top-3 rounded-full bg-slate-900/90 px-2.5 py-1 text-xs font-semibold text-white tabular-nums">
-            {inCart} in cart
-          </span>
+          <Chip
+            label={`${inCart} in cart`}
+            size="small"
+            sx={{
+              position: 'absolute',
+              left: 12,
+              top: 12,
+              bgcolor: 'rgba(15, 23, 42, 0.9)',
+              color: 'common.white',
+              fontWeight: 600,
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          />
         )}
         {soldOut && (
-          <span className="absolute right-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-slate-600">
-            Sold out
-          </span>
+          <Chip
+            label="Sold out"
+            size="small"
+            sx={{ position: 'absolute', right: 12, top: 12, bgcolor: 'rgba(255,255,255,0.9)', fontWeight: 600 }}
+          />
         )}
-      </div>
-      <div className="flex flex-1 flex-col gap-1 p-4">
-        <h3 className="text-sm font-semibold text-slate-900">{product.name}</h3>
-        {product.variant && <p className="text-xs text-slate-500">{product.variant}</p>}
-        <p className="mt-1 text-base font-semibold text-slate-900 tabular-nums">
+      </Box>
+      <CardContent sx={{ display: 'flex', flex: 1, flexDirection: 'column', gap: 0.5 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+          {product.name}
+        </Typography>
+        {product.variant && (
+          <Typography variant="caption" color="text.secondary">
+            {product.variant}
+          </Typography>
+        )}
+        <Typography variant="body1" sx={{ mt: 0.5, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
           {formatMoney(product.priceCents, product.currency)}
-        </p>
-        <div className="mt-3">
+        </Typography>
+        <Box sx={{ mt: 1.5 }}>
           <AddToCartButton product={product} />
-        </div>
-      </div>
-    </article>
+        </Box>
+      </CardContent>
+    </Card>
   );
 }

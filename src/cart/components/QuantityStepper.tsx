@@ -1,6 +1,13 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlineOutlined';
+import RemoveIcon from '@mui/icons-material/Remove';
+import IconButton from '@mui/material/IconButton';
+import InputBase from '@mui/material/InputBase';
+import Paper from '@mui/material/Paper';
+import { visuallyHidden } from '@mui/utils';
 
 interface QuantityStepperProps {
   quantity: number;
@@ -57,27 +64,28 @@ export function QuantityStepper({
   };
 
   return (
-    <div className="inline-flex items-stretch rounded-control border border-slate-300 bg-white shadow-resting dark:border-slate-600 dark:bg-slate-800">
-      <button
-        type="button"
+    <Paper
+      variant="outlined"
+      sx={{ display: 'inline-flex', alignItems: 'stretch', borderRadius: 'var(--radius-control)' }}
+    >
+      <IconButton
+        size="small"
         disabled={disabled}
         data-testid="stepper-decrement"
         onClick={() => (decrementRemoves ? onRemove() : onChange(quantity - 1))}
         aria-label={decrementRemoves ? `Remove ${itemName} from cart` : `Decrease quantity of ${itemName}`}
-        className="grid h-9 w-9 place-items-center rounded-l-control text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:z-10 focus-visible:focus-ring-inset disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white"
+        sx={{ borderRadius: 0, width: 36 }}
       >
-        {decrementRemoves ? <TrashIcon /> : <MinusIcon />}
-      </button>
+        {decrementRemoves ? <DeleteOutlineIcon fontSize="small" /> : <RemoveIcon fontSize="small" />}
+      </IconButton>
 
-      <label htmlFor={inputId} className="sr-only">
+      <label htmlFor={inputId} style={visuallyHidden}>
         Quantity of {itemName}
       </label>
-      <input
+      <InputBase
         id={inputId}
         type="text"
         inputMode="numeric"
-        pattern="[0-9]*"
-        autoComplete="off"
         disabled={disabled}
         value={draft}
         aria-describedby={atMax ? `${inputId}-max` : undefined}
@@ -109,49 +117,31 @@ export function QuantityStepper({
             onChange(quantity - 1);
           }
         }}
-        className="h-9 w-11 border-x border-slate-200 text-center text-sm font-medium text-slate-900 tabular-nums focus:focus-ring-inset disabled:opacity-40 dark:border-slate-600 dark:text-white"
+        slotProps={{ input: { pattern: '[0-9]*', autoComplete: 'off' } }}
+        sx={{
+          width: 44,
+          borderInline: '1px solid',
+          borderColor: 'divider',
+          '& input': { textAlign: 'center', fontVariantNumeric: 'tabular-nums', fontWeight: 500, fontSize: '0.875rem' },
+        }}
       />
 
-      <button
-        type="button"
+      <IconButton
+        size="small"
         disabled={disabled || atMax}
         data-testid="stepper-increment"
         onClick={() => onChange(quantity + 1)}
         aria-label={`Increase quantity of ${itemName}`}
-        className="grid h-9 w-9 place-items-center rounded-r-control text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:z-10 focus-visible:focus-ring-inset disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white"
+        sx={{ borderRadius: 0, width: 36 }}
       >
-        <PlusIcon />
-      </button>
+        <AddIcon fontSize="small" />
+      </IconButton>
 
       {atMax && (
-        <span id={`${inputId}-max`} className="sr-only">
+        <span id={`${inputId}-max`} style={visuallyHidden}>
           Maximum quantity of {maxQuantity} reached
         </span>
       )}
-    </div>
-  );
-}
-
-function MinusIcon() {
-  return (
-    <svg viewBox="0 0 16 16" aria-hidden="true" className="h-3.5 w-3.5" fill="currentColor">
-      <rect x="2.5" y="7.25" width="11" height="1.5" rx="0.75" />
-    </svg>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg viewBox="0 0 16 16" aria-hidden="true" className="h-3.5 w-3.5" fill="currentColor">
-      <path d="M7.25 2.5h1.5v4.75H13.5v1.5H8.75V13.5h-1.5V8.75H2.5v-1.5h4.75z" />
-    </svg>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <svg viewBox="0 0 16 16" aria-hidden="true" className="h-3.5 w-3.5" fill="currentColor">
-      <path d="M6.5 1h3a1 1 0 0 1 1 1v1h3v1.5h-1l-.6 8.1A1.5 1.5 0 0 1 10.4 14H5.6a1.5 1.5 0 0 1-1.5-1.4L3.5 4.5h-1V3h3V2a1 1 0 0 1 1-1m0 2h3V2.5h-3zM5 4.5l.59 8h4.82l.59-8z" />
-    </svg>
+    </Paper>
   );
 }

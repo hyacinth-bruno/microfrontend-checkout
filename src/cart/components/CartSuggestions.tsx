@@ -1,5 +1,10 @@
 'use client';
 
+import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
+import Avatar from '@mui/material/Avatar';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { formatMoney } from '../lib/money';
 import { selectLines, useCartStore } from '../store';
 import type { Product } from '../types';
@@ -22,38 +27,33 @@ export function CartSuggestions({ products }: CartSuggestionsProps) {
   if (visible.length === 0) return null;
 
   return (
-    <div
-      data-testid="cart-suggestions"
-      className="border-t border-slate-100 px-5 py-4 dark:border-slate-700"
-    >
-      <h3 className="text-xs font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
+    <Box data-testid="cart-suggestions" sx={{ borderTop: 1, borderColor: 'divider', px: 2.5, py: 2 }}>
+      <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 600 }}>
         You might also like
-      </h3>
-      <ul className="mt-3 flex gap-3 overflow-x-auto pb-1">
+      </Typography>
+      <Stack direction="row" spacing={1.5} sx={{ mt: 1.5, overflowX: 'auto', pb: 0.5 }}>
         {visible.map((product) => (
-          <li key={product.id} data-testid={`suggestion-${product.id}`} className="w-32 shrink-0">
-            <div className="aspect-square overflow-hidden rounded-control bg-slate-100 dark:bg-slate-700">
-              {product.imageUrl && (
-                // eslint-disable-next-line @next/next/no-img-element -- MFE must run against arbitrary host image CDNs
-                <img
-                  src={product.imageUrl}
-                  alt=""
-                  loading="lazy"
-                  decoding="async"
-                  className="h-full w-full object-cover"
-                />
-              )}
-            </div>
-            <p className="mt-2 truncate text-xs font-medium text-slate-900 dark:text-white">
+          <Box key={product.id} data-testid={`suggestion-${product.id}`} sx={{ width: 128, flexShrink: 0 }}>
+            <Avatar
+              variant="rounded"
+              src={product.imageUrl}
+              alt=""
+              sx={{ width: '100%', height: 128, bgcolor: 'action.hover', color: 'text.disabled' }}
+            >
+              <ImageOutlinedIcon />
+            </Avatar>
+            <Typography variant="caption" noWrap component="p" sx={{ mt: 1, fontWeight: 500 }}>
               {product.name}
-            </p>
-            <p className="text-xs text-slate-500 tabular-nums dark:text-slate-400">
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ fontVariantNumeric: 'tabular-nums' }}>
               {formatMoney(product.priceCents, product.currency)}
-            </p>
-            <AddToCartButton product={product} className="mt-2" />
-          </li>
+            </Typography>
+            <Box sx={{ mt: 1 }}>
+              <AddToCartButton product={product} />
+            </Box>
+          </Box>
         ))}
-      </ul>
-    </div>
+      </Stack>
+    </Box>
   );
 }

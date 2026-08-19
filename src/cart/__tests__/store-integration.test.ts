@@ -25,7 +25,7 @@ afterEach(() => {
 describe('persistence', () => {
   it('writes the basket to localStorage', async () => {
     useCartStore.getState().addItem(beans, 2);
-    // zustand/persist writes synchronously for a sync storage engine.
+    // our persist layer writes synchronously for a sync storage engine.
     const raw = localStorage.getItem(CART_STORAGE_KEY);
     expect(raw).toBeTruthy();
     const parsed = JSON.parse(raw as string);

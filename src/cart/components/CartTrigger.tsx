@@ -1,5 +1,7 @@
 'use client';
 
+import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined';
+import Box from '@mui/material/Box';
 import { selectHydrated, useCartActions, useCartStore, useCartTotals } from '../store';
 import { Button } from './Button';
 
@@ -7,6 +9,10 @@ import { Button } from './Button';
  * Header button with a live item-count badge.
  * The badge stays blank until the persisted cart is read, otherwise the server
  * HTML ("0") and the client's restored value would mismatch on hydration.
+ *
+ * The badge is only mounted (not just visually hidden) while empty/pre-hydration —
+ * MUI's `Badge` keeps its DOM node present under an `invisible` class, which
+ * would defeat the SSR test asserting the badge markup isn't there at all.
  */
 export function CartTrigger({ className = '' }: { className?: string }) {
   const { itemCount } = useCartTotals();
@@ -14,34 +20,48 @@ export function CartTrigger({ className = '' }: { className?: string }) {
   const { toggleCart } = useCartActions();
 
   return (
-    <Button
-      variant="outline"
-      onClick={toggleCart}
-      aria-label={
-        itemCount > 0
-          ? `Open cart, ${itemCount} ${itemCount === 1 ? 'item' : 'items'}`
-          : 'Open cart, empty'
-      }
-      className={`relative px-3.5 py-2.5 shadow-resting hover:shadow-raised ${className}`}
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5" fill="currentColor">
-        <path d="M6.2 6h14l-1.6 7.2a2 2 0 0 1-2 1.6H9a2 2 0 0 1-2-1.6L5.3 4.6A1 1 0 0 0 4.3 4H2.5v1.5h1.4zM9.5 18.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3m7 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3" />
-      </svg>
-      <span className="hidden sm:inline">Cart</span>
+    <Box sx={{ position: 'relative', display: 'inline-flex' }} className={className}>
+      <Button
+        variant="outline"
+        onClick={toggleCart}
+        aria-label={
+          itemCount > 0
+            ? `Open cart, ${itemCount} ${itemCount === 1 ? 'item' : 'items'}`
+            : 'Open cart, empty'
+        }
+        startIcon={<ShoppingBagOutlinedIcon fontSize="small" />}
+      >
+        <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+          Cart
+        </Box>
+      </Button>
       {hydrated && itemCount > 0 && (
-        /*
-          `key` is the count itself: when it changes React swaps the node and
-          the CSS animation replays. No state, no timers, no extra renders —
-          the browser owns the animation.
-        */
-        <span
+        // `key` is the count itself: when it changes React swaps the node so
+        // the CSS bump animation replays, with no state or timers involved.
+        <Box
           key={itemCount}
+          component="span"
           data-testid="cart-badge"
-          className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-brand px-1 text-[11px] font-semibold text-white tabular-nums motion-safe:animate-[cart-bump_300ms_ease-out] dark:bg-white dark:text-slate-900"
+          sx={{
+            position: 'absolute',
+            top: -6,
+            right: -6,
+            display: 'grid',
+            placeItems: 'center',
+            height: 20,
+            minWidth: 20,
+            px: 0.5,
+            borderRadius: '9999px',
+            bgcolor: 'primary.main',
+            color: 'primary.contrastText',
+            fontSize: 11,
+            fontWeight: 600,
+            fontVariantNumeric: 'tabular-nums',
+          }}
         >
           {itemCount > 99 ? '99+' : itemCount}
-        </span>
+        </Box>
       )}
-    </Button>
+    </Box>
   );
 }

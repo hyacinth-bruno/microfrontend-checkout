@@ -1,6 +1,12 @@
 'use client';
 
 import { memo } from 'react';
+import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
+import Avatar from '@mui/material/Avatar';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import { visuallyHidden } from '@mui/utils';
 import { formatMoney, lineTotalCents } from '../lib/money';
 import { useCartActions } from '../store';
 import type { CartLine } from '../types';
@@ -20,44 +26,49 @@ export const CartLineItem = memo(function CartLineItem({ line }: CartLineItemPro
   const atMax = line.quantity >= line.maxQuantity;
 
   return (
-    <li className="flex gap-4 py-5" data-testid={`cart-line-${line.id}`}>
-      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-control bg-slate-100 ring-1 ring-slate-900/5 dark:bg-slate-700 dark:ring-white/10">
-        {line.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- MFE must run against arbitrary host image CDNs
-          <img
-            src={line.imageUrl}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div aria-hidden="true" className="grid h-full w-full place-items-center text-slate-300 dark:text-slate-500">
-            <svg viewBox="0 0 24 24" className="h-8 w-8" fill="currentColor">
-              <path d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1m1 2v8.3l3.6-3.2 3.2 2.9 3.7-3.4L19 14.4V7zm11.5 2.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3" />
-            </svg>
-          </div>
-        )}
-      </div>
+    <Stack
+      component="li"
+      direction="row"
+      spacing={2}
+      sx={{ py: 2.5, borderBottom: 1, borderColor: 'divider', '&:last-of-type': { borderBottom: 0 } }}
+      data-testid={`cart-line-${line.id}`}
+    >
+      <Avatar
+        variant="rounded"
+        src={line.imageUrl}
+        alt=""
+        sx={{ height: 80, width: 80, bgcolor: 'action.hover', color: 'text.disabled' }}
+      >
+        <ImageOutlinedIcon />
+      </Avatar>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h3 className="truncate text-sm font-medium text-slate-900 dark:text-white">{line.name}</h3>
+      <Stack sx={{ minWidth: 0, flex: 1 }} spacing={1}>
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="body2" noWrap sx={{ fontWeight: 500 }}>
+              {line.name}
+            </Typography>
             {line.variant && (
-              <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{line.variant}</p>
+              <Typography variant="caption" color="text.secondary" noWrap component="p" sx={{ mt: 0.25 }}>
+                {line.variant}
+              </Typography>
             )}
-            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+            <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: 0.25 }}>
               {formatMoney(line.unitPriceCents, line.currency)} each
-            </p>
-          </div>
-          <p className="shrink-0 text-sm font-semibold text-slate-900 tabular-nums dark:text-white">
+            </Typography>
+          </Box>
+          <Typography
+            variant="body2"
+            sx={{ flexShrink: 0, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}
+          >
             {formatMoney(total, line.currency)}
-            <span className="sr-only"> total for {line.name}</span>
-          </p>
-        </div>
+            <Box component="span" sx={visuallyHidden}>
+              {' '}total for {line.name}
+            </Box>
+          </Typography>
+        </Stack>
 
-        <div className="mt-auto flex items-center justify-between gap-3">
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', justifyContent: 'space-between', mt: 'auto' }}>
           <QuantityStepper
             quantity={line.quantity}
             maxQuantity={line.maxQuantity}
@@ -65,18 +76,38 @@ export const CartLineItem = memo(function CartLineItem({ line }: CartLineItemPro
             onChange={(quantity) => setQuantity(line.id, quantity)}
             onRemove={() => removeItem(line.id)}
           />
-          <button
+          <Box
+            component="button"
             type="button"
             onClick={() => removeItem(line.id)}
             data-testid={`remove-${line.id}`}
-            className="rounded text-xs font-medium text-slate-500 underline-offset-4 transition hover:text-danger hover:underline focus-visible:focus-ring dark:text-slate-400"
+            sx={{
+              bgcolor: 'transparent',
+              border: 0,
+              cursor: 'pointer',
+              p: 0,
+              font: 'inherit',
+              fontSize: '0.75rem',
+              fontWeight: 500,
+              color: 'text.secondary',
+              textUnderlineOffset: '4px',
+              '&:hover': { color: 'error.main', textDecoration: 'underline' },
+            }}
           >
-            Remove<span className="sr-only"> {line.name} from cart</span>
-          </button>
-        </div>
+            Remove
+            <Box component="span" sx={visuallyHidden}>
+              {' '}{line.name} from cart
+            </Box>
+          </Box>
+        </Stack>
 
-        {atMax && <p className="text-xs text-warning">Only {line.maxQuantity} left in stock</p>}
-      </div>
-    </li>
+        {atMax && (
+          <Typography variant="caption" color="warning.main">
+            Only {line.maxQuantity} left in stock
+          </Typography>
+        )}
+      </Stack>
+    </Stack>
   );
 });
+

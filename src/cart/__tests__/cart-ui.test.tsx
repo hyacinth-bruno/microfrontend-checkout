@@ -1,5 +1,5 @@
 import { StrictMode } from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { AddToCartButton } from '../components/AddToCartButton';
@@ -297,7 +297,9 @@ describe('Drawer accessibility', () => {
     const dialog = screen.getByRole('dialog', { name: /shopping cart/i });
     expect(dialog).toHaveAttribute('aria-modal', 'true');
     await user.keyboard('{Escape}');
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    // MUI's Drawer unmounts (and restores focus) only after its exit
+    // transition's timer fires, not synchronously on close.
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(trigger).toHaveFocus();
   });
 
@@ -305,8 +307,8 @@ describe('Drawer accessibility', () => {
     const user = userEvent.setup();
     render(<Storefront />);
     await openDrawer(user);
-    await user.click(screen.getByTestId('cart-drawer').firstElementChild as Element);
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await user.click(screen.getByTestId('cart-backdrop'));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
   it('locks background scroll while open', async () => {
@@ -315,7 +317,7 @@ describe('Drawer accessibility', () => {
     await openDrawer(user);
     expect(document.body).toHaveStyle({ overflow: 'hidden' });
     await user.keyboard('{Escape}');
-    expect(document.body).not.toHaveStyle({ overflow: 'hidden' });
+    await waitFor(() => expect(document.body).not.toHaveStyle({ overflow: 'hidden' }));
   });
 });
 

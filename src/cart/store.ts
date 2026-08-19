@@ -1,8 +1,7 @@
 'use client';
 
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import { useShallow } from 'zustand/react/shallow';
+import { useSyncExternalStore } from 'react';
+import { configureStore, createAction, createReducer } from '@reduxjs/toolkit';
 import type { CartLine, CartTotals, CurrencyCode, Product } from './types';
 import {
   DEFAULT_CURRENCY,
@@ -41,103 +40,226 @@ export interface CartState {
   toggleCart: () => void;
 }
 
-/**
- * Zustand store.
- *
- * Why Zustand for a micro-frontend cart:
- * - the store is a module singleton, so the host app (or another MFE) can
- *   `useCartStore.getState().addItem(...)` without being wrapped in a provider;
- * - subscriptions are selector-based, so typing in one quantity input does not
- *   re-render the whole product grid;
- * - `persist` gives us session-surviving baskets in ~5 lines;
- * - it is ~1kB gzipped, which matters when you ship a bundle into someone
- *   else's page.
- */
-export const useCartStore = create<CartState>()(
-  persist(
-    (set) => ({
-      lines: [],
-      isOpen: false,
-      hydrated: false,
-      lastRemoved: null,
+type StoredState = Omit<
+  CartState,
+  | 'addItem'
+  | 'setQuantity'
+  | 'incrementQuantity'
+  | 'removeItem'
+  | 'undoRemove'
+  | 'clear'
+  | 'openCart'
+  | 'closeCart'
+  | 'toggleCart'
+>;
 
-      addItem: (product, quantity = 1) =>
-        set((state) => {
-          const lines = addLine(state.lines, product, quantity);
-          return lines === state.lines ? state : { lines, lastRemoved: null };
-        }),
+const initialState: StoredState = { lines: [], isOpen: false, hydrated: false, lastRemoved: null };
 
-      setQuantity: (lineId, quantity) =>
-        set((state) => {
-          const index = state.lines.findIndex((line) => line.id === lineId);
-          const lines = setLineQuantity(state.lines, lineId, quantity);
-          if (lines === state.lines) return state;
-          // Quantity driven to zero === removal, so keep undo working.
-          const removed = index !== -1 && lines.length < state.lines.length
-            ? { line: state.lines[index], index }
-            : null;
-          return { lines, lastRemoved: removed };
-        }),
+/* ------------------------------------------------------------------ *
+ * Redux slice — plain actions + a plain reducer (no Immer draft       *
+ * mutation) so every branch is a mechanical mirror of the pure        *
+ * `cart-logic` helpers: same bail-out-on-no-change behaviour, so      *
+ * `state.lines` keeps its reference when nothing actually changed.    *
+ * ------------------------------------------------------------------ */
 
-      incrementQuantity: (lineId, delta) =>
-        set((state) => {
-          const index = state.lines.findIndex((line) => line.id === lineId);
-          const lines = incrementLineQuantity(state.lines, lineId, delta);
-          if (lines === state.lines) return state;
-          const removed = index !== -1 && lines.length < state.lines.length
-            ? { line: state.lines[index], index }
-            : null;
-          return { lines, lastRemoved: removed };
-        }),
+const addItemAction = createAction<{ product: Product; quantity: number }>('cart/addItem');
+const setQuantityAction = createAction<{ lineId: string; quantity: number }>('cart/setQuantity');
+const incrementQuantityAction = createAction<{ lineId: string; delta: number }>('cart/incrementQuantity');
+const removeItemAction = createAction<{ lineId: string }>('cart/removeItem');
+const undoRemoveAction = createAction('cart/undoRemove');
+const clearAction = createAction('cart/clear');
+const openCartAction = createAction('cart/openCart');
+const closeCartAction = createAction('cart/closeCart');
+const toggleCartAction = createAction('cart/toggleCart');
+const hydrateAction = createAction<CartLine[]>('cart/hydrate');
+/** Generic escape hatch mirroring Zustand's `setState` (used by tests + UndoToast's auto-dismiss). */
+const patchAction = createAction<Partial<StoredState>>('cart/patch');
 
-      removeItem: (lineId) =>
-        set((state) => {
-          const index = state.lines.findIndex((line) => line.id === lineId);
-          if (index === -1) return state;
-          return {
-            lines: removeLine(state.lines, lineId),
-            lastRemoved: { line: state.lines[index], index },
-          };
-        }),
+// `createReducer`'s builder narrows `action.payload` per case for free, and
+// every case below *returns* a full replacement object rather than mutating
+// `state` — so Immer treats it as a plain swap, no draft-proxy caveats.
+const cartReducer = createReducer(initialState, (builder) => {
+  builder
+    .addCase(addItemAction, (state, action) => {
+      const { product, quantity } = action.payload;
+      const lines = addLine(state.lines, product, quantity);
+      return lines === state.lines ? state : { ...state, lines, lastRemoved: null };
+    })
+    .addCase(setQuantityAction, (state, action) => {
+      const { lineId, quantity } = action.payload;
+      const index = state.lines.findIndex((line) => line.id === lineId);
+      const lines = setLineQuantity(state.lines, lineId, quantity);
+      if (lines === state.lines) return state;
+      // Quantity driven to zero === removal, so keep undo working.
+      const removed = index !== -1 && lines.length < state.lines.length
+        ? { line: state.lines[index], index }
+        : null;
+      return { ...state, lines, lastRemoved: removed };
+    })
+    .addCase(incrementQuantityAction, (state, action) => {
+      const { lineId, delta } = action.payload;
+      const index = state.lines.findIndex((line) => line.id === lineId);
+      const lines = incrementLineQuantity(state.lines, lineId, delta);
+      if (lines === state.lines) return state;
+      const removed = index !== -1 && lines.length < state.lines.length
+        ? { line: state.lines[index], index }
+        : null;
+      return { ...state, lines, lastRemoved: removed };
+    })
+    .addCase(removeItemAction, (state, action) => {
+      const { lineId } = action.payload;
+      const index = state.lines.findIndex((line) => line.id === lineId);
+      if (index === -1) return state;
+      return {
+        ...state,
+        lines: removeLine(state.lines, lineId),
+        lastRemoved: { line: state.lines[index], index },
+      };
+    })
+    .addCase(undoRemoveAction, (state) => {
+      const snapshot = state.lastRemoved;
+      if (!snapshot) return state;
+      if (state.lines.some((line) => line.id === snapshot.line.id)) {
+        return { ...state, lastRemoved: null };
+      }
+      const lines = state.lines.slice();
+      // Put it back exactly where it was rather than at the end.
+      lines.splice(Math.min(snapshot.index, lines.length), 0, snapshot.line);
+      return { ...state, lines, lastRemoved: null };
+    })
+    .addCase(clearAction, (state) => ({ ...state, lines: [], lastRemoved: null }))
+    .addCase(openCartAction, (state) => (state.isOpen ? state : { ...state, isOpen: true }))
+    .addCase(closeCartAction, (state) => (state.isOpen ? { ...state, isOpen: false } : state))
+    .addCase(toggleCartAction, (state) => ({ ...state, isOpen: !state.isOpen }))
+    .addCase(hydrateAction, (state, action) => ({ ...state, lines: action.payload, hydrated: true }))
+    .addCase(patchAction, (state, action) => ({ ...state, ...action.payload }));
+});
 
-      undoRemove: () =>
-        set((state) => {
-          const snapshot = state.lastRemoved;
-          if (!snapshot) return state;
-          if (state.lines.some((line) => line.id === snapshot.line.id)) {
-            return { lastRemoved: null };
-          }
-          const lines = state.lines.slice();
-          // Put it back exactly where it was rather than at the end.
-          lines.splice(Math.min(snapshot.index, lines.length), 0, snapshot.line);
-          return { lines, lastRemoved: null };
-        }),
+export const store = configureStore({ reducer: cartReducer });
 
-      clear: () => set({ lines: [], lastRemoved: null }),
-      openCart: () => set({ isOpen: true }),
-      closeCart: () => set({ isOpen: false }),
-      toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
-    }),
-    {
-      name: CART_STORAGE_KEY,
-      version: 1,
-      storage: createJSONStorage(() => localStorage),
-      // Only the basket is durable. Drawer state and undo are ephemeral.
-      partialize: (state) => ({ lines: state.lines }),
-      // Hydrate manually from an effect so server HTML and first client render
-      // always match (see `CartHydrationGate`).
-      skipHydration: true,
-      merge: (persisted, current) => ({
-        ...current,
-        lines: sanitizeLines((persisted as { lines?: unknown } | undefined)?.lines),
-      }),
-      onRehydrateStorage: () => (_state, error) => {
-        if (error) console.error('[cart] failed to restore basket', error);
-        useCartStore.setState({ hydrated: true });
-      },
-    },
-  ),
-);
+/* ------------------------------------------------------------------ *
+ * Action dispatchers — stable, module-scoped function references so   *
+ * they double as the store's "actions" without being rebuilt on every *
+ * render (that stability is what keeps `useSyncExternalStore` happy). *
+ * ------------------------------------------------------------------ */
+
+const addItem: CartState['addItem'] = (product, quantity = 1) =>
+  store.dispatch(addItemAction({ product, quantity }));
+const setQuantity: CartState['setQuantity'] = (lineId, quantity) =>
+  store.dispatch(setQuantityAction({ lineId, quantity }));
+const incrementQuantity: CartState['incrementQuantity'] = (lineId, delta) =>
+  store.dispatch(incrementQuantityAction({ lineId, delta }));
+const removeItem: CartState['removeItem'] = (lineId) => store.dispatch(removeItemAction({ lineId }));
+const undoRemove: CartState['undoRemove'] = () => store.dispatch(undoRemoveAction());
+const clear: CartState['clear'] = () => store.dispatch(clearAction());
+const openCart: CartState['openCart'] = () => store.dispatch(openCartAction());
+const closeCart: CartState['closeCart'] = () => store.dispatch(closeCartAction());
+const toggleCart: CartState['toggleCart'] = () => store.dispatch(toggleCartAction());
+
+const actions = {
+  addItem,
+  setQuantity,
+  incrementQuantity,
+  removeItem,
+  undoRemove,
+  clear,
+  openCart,
+  closeCart,
+  toggleCart,
+} as const;
+
+/* ------------------------------------------------------------------ *
+ * `useCartStore` — a Zustand-shaped facade over the Redux store, so   *
+ * every component below keeps calling `useCartStore(selector)` with   *
+ * no provider. That's what lets a host mount `<CartRoot />` (or a bare *
+ * `<CartTrigger />`) anywhere without wrapping its tree in <Provider>. *
+ * ------------------------------------------------------------------ */
+
+let cachedBase: StoredState | null = null;
+let cachedSnapshot: CartState | null = null;
+
+function getSnapshot(): CartState {
+  const base = store.getState();
+  if (cachedSnapshot && cachedBase === base) return cachedSnapshot;
+  cachedBase = base;
+  cachedSnapshot = { ...base, ...actions };
+  return cachedSnapshot;
+}
+
+// Stable across the module's lifetime: server render and pre-hydration client
+// render must agree, or React flags a hydration mismatch.
+const serverSnapshot: CartState = { ...initialState, ...actions };
+function getServerSnapshot(): CartState {
+  return serverSnapshot;
+}
+
+export function useCartStore<T = CartState>(
+  selector: (state: CartState) => T = (state) => state as unknown as T,
+): T {
+  return useSyncExternalStore(
+    store.subscribe,
+    () => selector(getSnapshot()),
+    () => selector(getServerSnapshot()),
+  );
+}
+
+useCartStore.getState = getSnapshot;
+/** Generic partial-merge escape hatch, same contract as Zustand's `setState`. */
+useCartStore.setState = (partial: Partial<StoredState>) => store.dispatch(patchAction(partial));
+/** Fires on every dispatch, `(state, prevState)`, same contract as Zustand's `subscribe`. */
+useCartStore.subscribe = (listener: (state: CartState, prevState: CartState) => void): (() => void) => {
+  let prev = getSnapshot();
+  return store.subscribe(() => {
+    const curr = getSnapshot();
+    if (curr === prev) return;
+    const previous = prev;
+    prev = curr;
+    listener(curr, previous);
+  });
+};
+
+/* ------------------------------------------------------------------ *
+ * Persistence — hand-rolled (no `redux-persist`) so the on-disk shape *
+ * stays byte-compatible with the previous Zustand `persist` middleware *
+ * (`{ version, state: { lines } }`), and hydration stays an explicit, *
+ * client-only step: the server (and the first client render) always   *
+ * start from `initialState`, never touching `localStorage` at import  *
+ * time, so SSR stays crash-free (see `CartHydrationGate`/`CartRoot`). *
+ * ------------------------------------------------------------------ */
+
+let lastPersistedLines: CartLine[] | null = null;
+store.subscribe(() => {
+  const state = store.getState();
+  if (state.lines === lastPersistedLines) return;
+  lastPersistedLines = state.lines;
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(
+      CART_STORAGE_KEY,
+      JSON.stringify({ version: 1, state: { lines: state.lines } }),
+    );
+  } catch (error) {
+    console.error('[cart] failed to persist basket', error);
+  }
+});
+
+function rehydrate(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve();
+  let lines: CartLine[] = [];
+  try {
+    const raw = localStorage.getItem(CART_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as { state?: { lines?: unknown } } | null;
+      lines = sanitizeLines(parsed?.state?.lines);
+    }
+  } catch (error) {
+    console.error('[cart] failed to restore basket', error);
+  }
+  store.dispatch(hydrateAction(lines));
+  return Promise.resolve();
+}
+
+useCartStore.persist = { rehydrate };
 
 /* ------------------------------------------------------------------ *
  * Selectors — exported so components subscribe to the smallest slice. *
@@ -171,21 +293,8 @@ export const useCartLine = (lineId: string): CartLine | undefined =>
 export const useLineQuantity = (productId: string): number =>
   useCartStore((state) => state.lines.find((line) => line.id === productId)?.quantity ?? 0);
 
-/** Stable grab-bag of actions; `useShallow` stops it causing re-renders. */
-export const useCartActions = () =>
-  useCartStore(
-    useShallow((state) => ({
-      addItem: state.addItem,
-      setQuantity: state.setQuantity,
-      incrementQuantity: state.incrementQuantity,
-      removeItem: state.removeItem,
-      undoRemove: state.undoRemove,
-      clear: state.clear,
-      openCart: state.openCart,
-      closeCart: state.closeCart,
-      toggleCart: state.toggleCart,
-    })),
-  );
+/** Stable grab-bag of actions: a module-level constant, so it never triggers a re-render. */
+export const useCartActions = () => useCartStore(() => actions);
 
 /* ------------------------------------------------- *
  * Host-application integration (the "micro" bit).   *
