@@ -1,0 +1,115 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
+    "Apple Color Emoji", "Segoe UI Emoji";
+
+  /* ---- Design tokens -------------------------------------------------
+     Two radii and three elevations, applied consistently everywhere
+     instead of each component picking its own rounded-* / shadow-*. */
+
+  /* Buttons, inputs, thumbnails, badges-that-aren't-pills. */
+  --radius-control: 0.5rem;
+  /* Cards, the drawer, floating toasts — anything that reads as a "panel". */
+  --radius-panel: 1rem;
+
+  /* Cards and chrome controls at rest (ProductCard, CartTrigger, stepper). */
+  --shadow-resting: 0 1px 2px 0 rgb(15 23 42 / 0.04);
+  /* Hover state for the same elements. */
+  --shadow-raised: 0 4px 12px -2px rgb(15 23 42 / 0.08), 0 2px 4px -2px rgb(15 23 42 / 0.04);
+  /* Anything floating above the page/panel: the cart drawer, the undo toast. */
+  --shadow-overlay: 0 20px 40px -8px rgb(15 23 42 / 0.18), 0 8px 16px -4px rgb(15 23 42 / 0.08);
+
+  /* Semantic colors. Solid, self-contained chips (buttons, badges) don't need
+     a dark-mode variant — a slate-900/emerald-600 chip with white text reads
+     fine on any page. Warning/danger are used as bare text color on top of
+     whatever surface they're in, so those two do get a dark-mode shade
+     below. */
+  --color-brand: var(--color-slate-900);
+  --color-brand-hover: var(--color-slate-800);
+  --color-success: var(--color-emerald-600);
+  --color-warning: var(--color-amber-600);
+  --color-danger: var(--color-red-600);
+}
+
+/* Focus ring color follows the OS color-scheme so it stays visible against
+   whichever surface color a component resolves to — see the components'
+   `dark:` surface classes. */
+:root {
+  --focus-ring-color: var(--color-slate-900);
+  /* Resting text color the subtotal flash animation settles back to. */
+  --flash-end-color: var(--color-slate-900);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --focus-ring-color: var(--color-white);
+    --flash-end-color: var(--color-white);
+    --color-warning: var(--color-amber-400);
+    --color-danger: var(--color-red-400);
+  }
+}
+
+@utility focus-ring {
+  outline-width: 2px;
+  outline-offset: 2px;
+  outline-color: var(--focus-ring-color);
+}
+
+@utility focus-ring-inset {
+  outline-width: 2px;
+  outline-offset: -2px;
+  outline-color: var(--focus-ring-color);
+}
+
+/* Fixed (not OS-scheme-dependent) white ring for chrome that's always dark,
+   like the undo toast — its own background doesn't follow the OS scheme. */
+@utility focus-ring-inverse {
+  outline-width: 2px;
+  outline-offset: 2px;
+  outline-color: var(--color-white);
+}
+
+html {
+  font-family: var(--font-sans);
+}
+
+/* ---- Cart micro-frontend animations -------------------------------------
+   Declared as plain keyframes and consumed with Tailwind's arbitrary
+   `motion-safe:animate-[...]` utilities, so nothing animates for users who
+   have asked for reduced motion. */
+
+@keyframes cart-slide-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes cart-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cart-toast-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cart-bump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.28); }
+  100% { transform: scale(1); }
+}
+
+@keyframes cart-flash {
+  0% {
+    color: var(--color-success);
+    transform: scale(1.04);
+  }
+  60% {
+    color: var(--color-success);
+  }
+  100% {
+    color: var(--flash-end-color);
+    transform: scale(1);
+  }
+}
