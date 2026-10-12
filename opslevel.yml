@@ -1,0 +1,69 @@
+---
+version: 1
+component:
+  name: Order Service
+  type: service
+  lifecycle: available
+  tier: tier_1
+  product:
+  owner: sec_pe_team_anvil
+  system: webshop_platforms
+  language: Java
+  framework: Spring
+  description: Service that stores customer orders and its updates
+  aliases:
+    - order-service
+  tags:
+  repositories:
+    - name: RedTecLab/order-service
+      path: "/"
+      provider: github
+  tools:
+    - name: Kibana
+      category: logs
+      url: https://telemetry.ref-sa-tech.io/app/discover#/?_g=(filters:!(),refreshInterval:(pause:!t,value:60000),time:(from:now%2Fd,to:now%2Fd))&_a=(columns:!(),filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,field:kubernetes.labels.stage,index:db1d8d40-e736-11ec-ba0e-37297650ea2b,key:kubernetes.labels.stage,negate:!f,params:(query:production),type:phrase),query:(match_phrase:(kubernetes.labels.stage:production))),('$state':(store:appState),meta:(alias:!n,disabled:!f,field:kubernetes.labels.app,index:db1d8d40-e736-11ec-ba0e-37297650ea2b,key:kubernetes.labels.app,negate:!f,params:(query:order-service),type:phrase),query:(match_phrase:(kubernetes.labels.app:order-service)))),hideChart:!f,index:'851b0c2d-f3cb-4c79-9f6f-4b7020c19112',interval:auto,query:(language:kuery,query:''),sort:!(!('@timestamp',desc)))
+      environment: Production
+    - name: Kibana
+      category: logs
+      url: https://telemetry.ref-sa-tech.io/app/discover#/?_g=(filters:!(),refreshInterval:(pause:!t,value:60000),time:(from:now%2Fd,to:now%2Fd))&_a=(columns:!(),filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,field:kubernetes.labels.stage,index:db1d8d40-e736-11ec-ba0e-37297650ea2b,key:kubernetes.labels.stage,negate:!f,params:(query:reference),type:phrase),query:(match_phrase:(kubernetes.labels.stage:reference))),('$state':(store:appState),meta:(alias:!n,disabled:!f,field:kubernetes.labels.app,index:db1d8d40-e736-11ec-ba0e-37297650ea2b,key:kubernetes.labels.app,negate:!f,params:(query:order-service),type:phrase),query:(match_phrase:(kubernetes.labels.app:order-service)))),index:db1d8d40-e736-11ec-ba0e-37297650ea2b,interval:auto,query:(language:kuery,query:''),sort:!(!('@timestamp',desc)))
+      environment: Reference
+    - name: Kibana
+      category: logs
+      url: https://telemetry.ref-sa-tech.io/app/discover#/?_g=(filters:!(),refreshInterval:(pause:!t,value:60000),time:(from:now%2Fd,to:now%2Fd))&_a=(columns:!(),filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,field:kubernetes.labels.stage,index:db1d8d40-e736-11ec-ba0e-37297650ea2b,key:kubernetes.labels.stage,negate:!f,params:(query:reference),type:phrase),query:(match_phrase:(kubernetes.labels.stage:reference))),('$state':(store:appState),meta:(alias:!n,disabled:!f,field:kubernetes.labels.app,index:db1d8d40-e736-11ec-ba0e-37297650ea2b,key:kubernetes.labels.app,negate:!f,params:(query:order-service),type:phrase),query:(match_phrase:(kubernetes.labels.app:order-service)))),index:db1d8d40-e736-11ec-ba0e-37297650ea2b,interval:auto,query:(language:kuery,query:''),sort:!(!('@timestamp',desc)))
+      environment: Reference
+    - name: Grafana
+      category: metrics
+      url: https://telemetry.fra1.sae.systems/grafana/d/WgleFec4k/f09f9ba0-efb88f-order-service?orgId=1&from=now-24h&to=now&timezone=browser&var-Application=order-service&var-PodName=$__all&var-datasource=ee9986a9-15a2-4d60-bbe5-5b385093ca81
+      environment: Production
+    - name: SonarQube Cloud
+      category: code
+      url: https://sonarcloud.io/project/overview?id=com.redteclab%3Aorder-service
+      environment:
+  dependencies:
+  alert_sources:
+  properties:
+    authentication:
+      - User to Service (via CAS, JWT)
+    authorization:
+      - Role Based Access
+    cache:
+      - None
+    data_classification:
+      - Customer Personally Identifiable Information (PII)
+      - Customer Health Data
+    database:
+      - MongoDB, 8.0+
+    hosting:
+      - GCP, Kubernetes, Webshop Cluster
+    message_queue_cluster:
+      - RMQ Webshop, Consumer
+      - RMQ Webshop, Producer
+    messaging:
+      - None
+    ownership_confidence: High
+    public_endpoint:
+    service_configuration: none
+    static_content_hosting:
+      - None
+    storage:
+      - None
